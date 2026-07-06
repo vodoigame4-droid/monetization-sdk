@@ -13,6 +13,10 @@ object AdLogger {
         Log.d(TAG, message)
     }
 
+    fun w(message: String) {
+        Log.w(TAG, message)
+    }
+
     fun e(message: String, throwable: Throwable? = null) {
         if (throwable != null) {
             Log.e(TAG, message, throwable)

@@ -73,7 +73,7 @@ class MonetizationBannerView @JvmOverloads constructor(
         observeJob = currentScope.launch {
             val activity = getActivity(context)
             if (activity == null) {
-                android.util.Log.w("MonetizationBannerView", "startObserving: cannot find Activity context for Banner ad group")
+                com.tomo.monetization.util.AdLogger.w("⚠️ [XML BANNER VIEW] startObserving: cannot find Activity context for Banner ad group")
                 return@launch
             }
 

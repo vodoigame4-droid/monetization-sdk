@@ -96,7 +96,7 @@ class MonetizationNativeView @JvmOverloads constructor(
         observeJob = currentScope.launch {
             val activity = getActivity(context)
             if (activity == null) {
-                android.util.Log.w("MonetizationNativeView", "startObserving: cannot find Activity context for Native ad group")
+                com.tomo.monetization.util.AdLogger.w("⚠️ [XML NATIVE VIEW] startObserving: cannot find Activity context for Native ad group")
                 return@launch
             }
 
