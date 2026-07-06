@@ -50,6 +50,19 @@ android {
     }
 }
 
+afterEvaluate {
+    publishing {
+        publications {
+            register<MavenPublication>("release") {
+                groupId = "com.github.vodoigame4-droid.monetization-sdk"
+                artifactId = "monetization"
+                version = "1.0.0"
+
+                from(components["release"])
+            }
+        }
+    }
+}
 
 dependencies {
     implementation(libs.timber)
