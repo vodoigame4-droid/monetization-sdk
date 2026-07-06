@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorAds">#FF64DB</color>
+    <color name="colorAds">#F06292</color>
+    <color name="colorAdsPressed">#D84272</color>
+    <color name="colorAdsDisabled">#FDD0F0</color>
     <color name="colorTxtHeading">#0F0F0F</color>
     <color name="colorTxtBody">#BF0F0F0F</color>
     <color name="colorTxtCta">#FFFFFF</color>
@@ -11,6 +13,9 @@
 
     <color name="colorBgLoadingAd">@android:color/white</color>
     <color name="colorTxtLoadingAd">#717171</color>
+
+    <string name="monetization_ad_label">Ad</string>
+    <string name="monetization_loading_ads">Loading ads...</string>
 
     <style name="DialogTheme">
         <item name="android:windowFrame">@null</item>
@@ -40,7 +45,7 @@
         <item name="android:layout_height">wrap_content</item>
         <item name="android:minWidth">15dp</item>
         <item name="android:minHeight">15dp</item>
-        <item name="android:text">Ad</item>
+        <item name="android:text">@string/monetization_ad_label</item>
     </style>
 
     <style name="Theme.App.AdActivity" parent="Theme.AppCompat.NoActionBar">

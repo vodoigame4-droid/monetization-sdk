@@ -19,7 +19,7 @@
         android:layout_below="@+id/spin_kit"
         android:layout_centerHorizontal="true"
         android:layout_marginTop="20dp"
-        android:text="Loading ads..."
+        android:text="@string/monetization_loading_ads"
         android:textColor="@color/colorTxtLoadingAd"
         android:textStyle="bold" />
 </RelativeLayout>

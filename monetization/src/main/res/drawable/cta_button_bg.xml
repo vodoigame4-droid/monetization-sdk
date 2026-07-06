@@ -4,7 +4,7 @@
     <!-- Disabled -->
     <item android:state_enabled="false">
         <shape android:shape="rectangle">
-            <solid android:color="#FDD0F0" />
+            <solid android:color="@color/colorAdsDisabled" />
             <corners android:radius="25dp" />
         </shape>
     </item>
@@ -12,7 +12,7 @@
     <!-- Pressed -->
     <item android:state_pressed="true">
         <shape android:shape="rectangle">
-            <solid android:color="#D84272" />
+            <solid android:color="@color/colorAdsPressed" />
             <corners android:radius="25dp" />
         </shape>
     </item>
@@ -20,7 +20,7 @@
     <!-- Normal -->
     <item>
         <shape android:shape="rectangle">
-            <solid android:color="#F06292" />
+            <solid android:color="@color/colorAds" />
             <corners android:radius="25dp" />
         </shape>
     </item>
