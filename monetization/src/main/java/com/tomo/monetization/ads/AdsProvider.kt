@@ -20,9 +20,9 @@ object AdsProvider {
     val rewardeds = mutableMapOf<String, RewardedAdGroup>()
     val appOpens = mutableMapOf<String, AppOpenAdGroup>()
 
-    // Lookup helpers
-    fun getBanner(key: String): BannerAdGroup? = banners[key]
-    fun getNative(key: String): NativeAdGroup? = natives[key]
+    // Lookup helpers (auto-cloning View-based ads to prevent screen view conflicts)
+    fun getBanner(key: String): BannerAdGroup? = banners[key]?.clone()
+    fun getNative(key: String): NativeAdGroup? = natives[key]?.clone()
     fun getInterstitial(key: String): InterstitialAdGroup? = interstitials[key]
     fun getRewarded(key: String): RewardedAdGroup? = rewardeds[key]
     fun getAppOpen(key: String): AppOpenAdGroup? = appOpens[key]

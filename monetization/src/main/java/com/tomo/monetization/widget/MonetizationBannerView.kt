@@ -85,8 +85,12 @@ class MonetizationBannerView @JvmOverloads constructor(
                 ) {
                     adGroup.loadAds(activity, widthDp)
                 }
-                status
-            }.collectLatest { status ->
+                status to enabled
+            }.collectLatest { (status, enabled) ->
+                if (!enabled) {
+                    removeAllViews()
+                    return@collectLatest
+                }
                 if (status == AdStatus.Ready) {
                     val adView = adGroup.getLoadedAd()
                     if (adView != null) {

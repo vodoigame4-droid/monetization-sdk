@@ -108,8 +108,12 @@ class MonetizationNativeView @JvmOverloads constructor(
                 ) {
                     adGroup.loadAds(activity)
                 }
-                status
-            }.collectLatest { status ->
+                status to enabled
+            }.collectLatest { (status, enabled) ->
+                if (!enabled) {
+                    removeAllViews()
+                    return@collectLatest
+                }
                 if (status == AdStatus.Ready) {
                     val nativeAd = adGroup.getLoadedAd()
                     if (nativeAd != null) {
