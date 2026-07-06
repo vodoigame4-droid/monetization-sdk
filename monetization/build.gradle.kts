@@ -54,9 +54,9 @@ afterEvaluate {
     publishing {
         publications {
             register<MavenPublication>("release") {
-                groupId = "com.github.vodoigame4-droid.monetization-sdk"
-                artifactId = "monetization"
-                version = "1.0.0"
+                groupId = "com.github.vodoigame4-droid"
+                artifactId = "monetization-sdk"
+                version = "1.0.5"
 
                 from(components["release"])
             }
