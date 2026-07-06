@@ -9,6 +9,7 @@ import com.tomo.monetization.Monetization
 import com.tomo.monetization.ads.base.AdStatus
 import com.tomo.monetization.ads.base.AdUnitGroup
 import com.tomo.monetization.util.EventTracking
+import com.tomo.monetization.util.AdLogger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -26,16 +27,19 @@ class AppOpenAdGroup(
 
     fun loadAds(context: Context, timeout: Long = 30_000L) {
         if (!enabled) {
+            AdLogger.logLoadFailed("APP_OPEN", name, "", "Group is disabled")
             Log.d(TAG, "loadAds: group $name is not enabled")
             return
         }
 
         if (Monetization.isPremium()){
+            AdLogger.logLoadFailed("APP_OPEN", name, "", "User is premium, skipping ads")
             Log.d(TAG, "loadAds: group $name, User isPremium")
             return
         }
 
         if (isAdLoading || isAdReady) {
+            AdLogger.logLoadFailed("APP_OPEN", name, "", "Ads in this group are already loading or ready (status = $status)")
             Log.d(TAG, "loadAds: group $name is either loading or ready: status=$status")
             return
         }
@@ -43,6 +47,7 @@ class AppOpenAdGroup(
         Monetization.calDistanceTime(
             type = AdType.APP_OPEN,
             onDismiss = {
+                AdLogger.logLoadFailed("APP_OPEN", name, "", "Skip loading because gap/distance time has not passed yet.")
                 Log.d(TAG, "loadAds: group $name skip distance time")
             },
             showAds = {

@@ -90,6 +90,14 @@ object Monetization {
         disableDistanceTimeOnce = true
     }
 
+    fun isDistanceTimePassed(type: AdType): Boolean {
+        if (disableDistanceTimeOnce) return true
+        val lastShow = recentlyTimeShowAds[type] ?: return true
+        val distanceTime = distanceTimeShowAds[type] ?: 30
+        val distanceShowAds = java.lang.Math.abs(java.time.Duration.between(lastShow, java.time.LocalDateTime.now()).seconds)
+        return distanceShowAds > distanceTime
+    }
+
     fun config(
         context: Context,
         adjustConfig: AdjustLogConfig? = null,
@@ -126,5 +134,16 @@ object Monetization {
                 Log.d(TAG, "Adapter name: $name, State: ${adapterStatus.initializationState}, Description: ${adapterStatus.description}, Latency: ${adapterStatus.latency}")
             }
         }
+    }
+
+    val ads: com.tomo.monetization.ads.AdsProvider
+        get() = com.tomo.monetization.ads.AdsProvider
+
+    fun loadConfigFromJson(
+        context: Context, 
+        jsonString: String,
+        resumeActivities: List<kotlin.reflect.KClass<out android.app.Activity>> = emptyList()
+    ) {
+        com.tomo.monetization.ads.AdsConfigLoader.loadConfigFromJson(context, jsonString, resumeActivities)
     }
 }

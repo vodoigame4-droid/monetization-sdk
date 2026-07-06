@@ -17,6 +17,7 @@ import com.tomo.monetization.analytics.AdRevenueAdType
 import com.tomo.monetization.analytics.LogEventManager
 import com.tomo.monetization.billing.AppBilling
 import com.tomo.monetization.util.EventTracking
+import com.tomo.monetization.util.AdLogger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
@@ -34,21 +35,25 @@ class BannerAdUnit(id: String, name: String, val isCollapsible: Boolean = false)
 
         if (!enabled || AppBilling.isPurchasedAdFree || id.isBlank()) {
             updateStatus(AdStatus.Failure)
+            AdLogger.logLoadFailed("BANNER", name, id, "Ad is disabled, user is Premium, or adUnitId is blank")
             Log.d(TAG, "loadAd: $name $id is disabled or blank")
             return false
         }
 
         if (!NetworkManager.isNetworkConnected()) {
             updateStatus(AdStatus.Failure)
+            AdLogger.logLoadFailed("BANNER", name, id, "No internet connection")
             Log.d(TAG, "loadAd: $name $id no internet")
             return false
         }
 
         if (!shouldLoadAd()) {
+            AdLogger.logLoadFailed("BANNER", name, id, "Ad already loaded/loading and doesn't need reload")
             Log.d(TAG, "loadAd: $name $id doesn't need to be loaded")
             return true
         }
 
+        AdLogger.logLoadStart("BANNER", name, id)
         Log.d(TAG, "loadAd: $name $id loading")
         updateStatus(AdStatus.Loading)
 
@@ -79,6 +84,7 @@ class BannerAdUnit(id: String, name: String, val isCollapsible: Boolean = false)
             adListener = object : AdListener() {
                 override fun onAdLoaded() {
                     EventTracking.logEvent("${name}_loaded")
+                    AdLogger.logLoaded("BANNER", name, id)
                     Log.d(TAG, "onAdLoaded: $name $id")
                     if (cont.isActive) cont.resume(this@apply)
                 }
@@ -92,11 +98,13 @@ class BannerAdUnit(id: String, name: String, val isCollapsible: Boolean = false)
 
                 override fun onAdFailedToLoad(error: LoadAdError) {
                     EventTracking.logEvent("${name}_failed")
+                    AdLogger.logLoadFailed("BANNER", name, id, "${error.code} - ${error.message}")
                     Log.e(TAG, "onAdFailedToLoad: $name $id ${error.message}")
                     if (cont.isActive) cont.resume(null)
                 }
 
                 override fun onAdImpression() {
+                    AdLogger.logImpression("BANNER", name, id)
                     Log.d(TAG, "onAdImpression: $name $id")
                     EventTracking.logEvent("${name}_view")
                     updateStatus(AdStatus.Shown)
@@ -137,5 +145,10 @@ class BannerAdUnit(id: String, name: String, val isCollapsible: Boolean = false)
         }
         return AdRequest.Builder()
             .addNetworkExtrasBundle(AdMobAdapter::class.java, bundle)
+    }
+
+    override fun release() {
+        ad?.destroy()
+        super.release()
     }
 }

@@ -19,6 +19,7 @@ import com.tomo.monetization.billing.AppBilling
 import com.tomo.monetization.util.EventTracking
 import com.tomo.monetization.util.PrepareLoadingAdsDialog
 import com.tomo.monetization.util.launchWhenResumed
+import com.tomo.monetization.util.AdLogger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -36,21 +37,25 @@ class InterstitialAdUnit(id: String, name: String) : AdUnit<InterstitialAd>(id, 
 
         if (!enabled || AppBilling.isPurchasedAdFree) {
             updateStatus(AdStatus.Failure)
+            AdLogger.logLoadFailed("INTERSTITIAL", name, id, "Ad is disabled or user is Premium")
             Log.d(TAG, "loadAd: $name $id is disabled")
             return false
         }
 
         if (!NetworkManager.isNetworkConnected()) {
             updateStatus(AdStatus.Failure)
+            AdLogger.logLoadFailed("INTERSTITIAL", name, id, "No internet connection")
             Log.d(TAG, "loadAd: $name $id no internet")
             return false
         }
 
         if (!shouldLoadAd()) {
+            AdLogger.logLoadFailed("INTERSTITIAL", name, id, "Ad already loaded/loading and doesn't need reload")
             Log.d(TAG, "loadAd: $name $id doesn't need to be loaded")
             return true
         }
 
+        AdLogger.logLoadStart("INTERSTITIAL", name, id)
         Log.d(TAG, "loadAd: $name $id loading")
         updateStatus(AdStatus.Loading)
 
@@ -118,6 +123,7 @@ class InterstitialAdUnit(id: String, name: String) : AdUnit<InterstitialAd>(id, 
                     }
 
                     override fun onAdFailedToShowFullScreenContent(adError: AdError) {
+                        AdLogger.logShowFailed("INTERSTITIAL", name, id, "${adError.code} - ${adError.message}")
                         Log.d(TAG, "onAdFailedToShow: $name $id")
                         dismissLoadAdsDialog(activity, loadingDialog)
                         onAdFailedToShow(adError)
@@ -125,6 +131,7 @@ class InterstitialAdUnit(id: String, name: String) : AdUnit<InterstitialAd>(id, 
                     }
 
                     override fun onAdImpression() {
+                        AdLogger.logImpression("INTERSTITIAL", name, id)
                         Log.d(TAG, "onAdImpression: $name $id")
                         EventTracking.logEvent("${name}_view")
                         updateStatus(AdStatus.Shown)
@@ -132,6 +139,7 @@ class InterstitialAdUnit(id: String, name: String) : AdUnit<InterstitialAd>(id, 
                     }
 
                     override fun onAdShowedFullScreenContent() {
+                        AdLogger.logShowed("INTERSTITIAL", name, id)
                         Log.d(TAG, "onAdShowed: $name $id")
                         activity.launchWhenResumed {
                             delay(3000)
@@ -165,6 +173,7 @@ class InterstitialAdUnit(id: String, name: String) : AdUnit<InterstitialAd>(id, 
         InterstitialAd.load(context, id, request, object : InterstitialAdLoadCallback() {
             override fun onAdLoaded(ad: InterstitialAd) {
                 EventTracking.logEvent("${name}_loaded")
+                AdLogger.logLoaded("INTERSTITIAL", name, id)
                 Log.d(TAG, "onAdLoaded: $name $id")
                 ad.setOnPaidEventListener { value ->
                     LogEventManager.logPaidAdImpression(
@@ -179,6 +188,7 @@ class InterstitialAdUnit(id: String, name: String) : AdUnit<InterstitialAd>(id, 
 
             override fun onAdFailedToLoad(error: LoadAdError) {
                 EventTracking.logEvent("${name}_failed")
+                AdLogger.logLoadFailed("INTERSTITIAL", name, id, "${error.code} - ${error.message}")
                 Log.e(TAG, "onAdFailedToLoad: $name $id ${error.message}")
                 if (cont.isActive) cont.resume(null)
             }

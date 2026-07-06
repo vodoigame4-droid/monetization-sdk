@@ -40,7 +40,7 @@ abstract class AdUnit<T>(val id: String, val name: String) {
         return System.currentTimeMillis() - adLoadedTimestamp > adTimeExpiration
     }
 
-    fun release() {
+    open fun release() {
         ad = null
         _statusFlow.value = AdStatus.None
     }

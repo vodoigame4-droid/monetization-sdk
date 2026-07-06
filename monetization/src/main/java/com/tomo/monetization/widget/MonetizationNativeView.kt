@@ -33,17 +33,38 @@ class MonetizationNativeView @JvmOverloads constructor(
 
     private var scope: CoroutineScope? = null
     private var observeJob: Job? = null
+    private var pendingAdGroup: NativeAdGroup? = null
+    private var pendingLayoutRes: Int = R.layout.layout_native_ad_default
+    private var pendingShimmerRes: Int = R.layout.layout_native_ad_default_shimmer
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
         scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+        if (pendingAdGroup != null) {
+            startObserving()
+        }
     }
 
     override fun onDetachedFromWindow() {
         observeJob?.cancel()
         scope?.cancel()
         scope = null
+        val activity = getActivity(context)
+        if (activity == null || activity.isFinishing || activity.isDestroyed) {
+            pendingAdGroup?.release()
+        }
         super.onDetachedFromWindow()
+    }
+
+    private fun getActivity(context: Context): Activity? {
+        var ctx = context
+        while (ctx is android.content.ContextWrapper) {
+            if (ctx is Activity) {
+                return ctx
+            }
+            ctx = ctx.baseContext
+        }
+        return null
     }
 
     fun setAdGroup(
@@ -51,12 +72,26 @@ class MonetizationNativeView @JvmOverloads constructor(
         @LayoutRes layoutRes: Int = R.layout.layout_native_ad_default,
         @LayoutRes shimmerRes: Int = R.layout.layout_native_ad_default_shimmer
     ) {
-        observeJob?.cancel()
-        val currentScope = scope ?: return
+        pendingAdGroup = adGroup
+        pendingLayoutRes = layoutRes
+        pendingShimmerRes = shimmerRes
 
         val inflater = LayoutInflater.from(context)
         removeAllViews()
         inflater.inflate(shimmerRes, this, true)
+
+        if (isAttachedToWindow) {
+            startObserving()
+        }
+    }
+
+    private fun startObserving() {
+        val adGroup = pendingAdGroup ?: return
+        val layoutRes = pendingLayoutRes
+        val shimmerRes = pendingShimmerRes
+        observeJob?.cancel()
+        val currentScope = scope ?: return
+        val inflater = LayoutInflater.from(context)
 
         observeJob = currentScope.launch {
             val activity = context as? Activity ?: return@launch

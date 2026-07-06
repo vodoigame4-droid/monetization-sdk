@@ -99,4 +99,8 @@ abstract class AdUnitGroup<O, T : AdUnit<O>>(
         }
         return result
     }
+
+    open fun release() {
+        adUnits.forEach { it.release() }
+    }
 }

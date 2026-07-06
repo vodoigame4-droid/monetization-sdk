@@ -10,6 +10,7 @@ import com.tomo.monetization.ads.app_open.AppOpenAdGroup
 import com.tomo.monetization.ads.base.AdStatus
 import com.tomo.monetization.ads.base.AdUnitGroup
 import com.tomo.monetization.util.EventTracking
+import com.tomo.monetization.util.AdLogger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -37,11 +38,13 @@ class RewardedAdGroup(
 
     fun loadAds(context: Context, timeout: Long = 30_000L) {
         if (!enabled) {
+            AdLogger.logLoadFailed("REWARDED", name, "", "Group is disabled")
             Log.d(TAG, "loadAds: group $name is not enabled")
             return
         }
 
         if (isAdLoading || isAdReady) {
+            AdLogger.logLoadFailed("REWARDED", name, "", "Ads in this group are already loading or ready (status = $status)")
             Log.d(TAG, "loadAds: group $name is either loading or ready: status=$status")
             return
         }
@@ -49,6 +52,7 @@ class RewardedAdGroup(
         Monetization.calDistanceTime(
             type = AdType.REWARDED,
             onDismiss = {
+                AdLogger.logLoadFailed("REWARDED", name, "", "Skip loading because gap/distance time has not passed yet.")
                 Log.d(TAG, "loadAds: group $name skip distance time")
             },
             showAds = {
@@ -131,6 +135,64 @@ class RewardedAdGroup(
             )
         } ?: run {
             loadAds(activity)
+        }
+    }
+
+    fun loadAndShow(
+        activity: Activity,
+        callback: RewardedAdCallback,
+        timeout: Long = 10_000L
+    ) {
+        if (!enabled) {
+            AdLogger.logLoadFailed("REWARDED", name, "", "Group is disabled")
+            callback.onNextAction(false)
+            return
+        }
+
+        if (!Monetization.isDistanceTimePassed(AdType.REWARDED)) {
+            AdLogger.logLoadFailed("REWARDED", name, "", "Skip loading because gap/distance time has not passed yet.")
+            Log.d(TAG, "loadAndShow: skip loading because distance time is not passed")
+            callback.onNextAction(false)
+            return
+        }
+
+        if (status == AdStatus.Ready) {
+            showAds(activity, callback)
+            return
+        }
+
+        val loadingDialog = com.tomo.monetization.util.PrepareLoadingAdsDialog(activity).apply {
+            show()
+        }
+
+        coroutineScope.launch(Dispatchers.Main) {
+            loadAds(activity, timeout = timeout)
+
+            val startTime = System.currentTimeMillis()
+            var isAdLoaded = false
+
+            while (System.currentTimeMillis() - startTime < timeout) {
+                if (status == AdStatus.Ready) {
+                    isAdLoaded = true
+                    break
+                }
+                if (status == AdStatus.Failure) {
+                    break
+                }
+                delay(100)
+            }
+
+            try {
+                if (loadingDialog.isShowing) {
+                    loadingDialog.dismiss()
+                }
+            } catch (_: Exception) {}
+
+            if (isAdLoaded) {
+                showAds(activity, callback)
+            } else {
+                callback.onNextAction(false)
+            }
         }
     }
 }

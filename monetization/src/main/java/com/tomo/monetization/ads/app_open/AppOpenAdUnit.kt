@@ -18,6 +18,7 @@ import com.tomo.monetization.billing.AppBilling
 import com.tomo.monetization.util.EventTracking
 import com.tomo.monetization.util.OpenResumeLoadingDialog
 import com.tomo.monetization.util.launchWhenResumed
+import com.tomo.monetization.util.AdLogger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -38,21 +39,25 @@ class AppOpenAdUnit(id: String, name: String) : AdUnit<AppOpenAd>(id, name) {
 
         if (!enabled || AppBilling.isPurchasedAdFree) {
             updateStatus(AdStatus.Failure)
+            AdLogger.logLoadFailed("APP_OPEN", name, id, "Ad is disabled or user is Premium")
             Log.d(TAG, "loadAd: $name $id is disabled")
             return false
         }
 
         if (!NetworkManager.isNetworkConnected()) {
             updateStatus(AdStatus.Failure)
+            AdLogger.logLoadFailed("APP_OPEN", name, id, "No internet connection")
             Log.d(TAG, "loadAd: $name $id no internet")
             return false
         }
 
         if (!shouldLoadAd()) {
+            AdLogger.logLoadFailed("APP_OPEN", name, id, "Ad already loaded/loading and doesn't need reload")
             Log.d(TAG, "loadAd: $name $id doesn't need to be loaded")
             return true
         }
 
+        AdLogger.logLoadStart("APP_OPEN", name, id)
         Log.d(TAG, "loadAd: $name $id loading")
         updateStatus(AdStatus.Loading)
 
@@ -121,12 +126,14 @@ class AppOpenAdUnit(id: String, name: String) : AdUnit<AppOpenAd>(id, name) {
                     }
 
                     override fun onAdFailedToShowFullScreenContent(adError: AdError) {
+                        AdLogger.logShowFailed("APP_OPEN", name, id, "${adError.code} - ${adError.message}")
                         Log.d(TAG, "onAdFailedToShow: $name $id")
                         dismissLoadAdsDialog(activity, loadingDialog)
                         onAdFailedToShow(adError)
                     }
 
                     override fun onAdImpression() {
+                        AdLogger.logImpression("APP_OPEN", name, id)
                         Log.d(TAG, "onAdImpression: $name $id")
                         EventTracking.logEvent("${name}_view")
                         updateStatus(AdStatus.Shown)
@@ -134,6 +141,7 @@ class AppOpenAdUnit(id: String, name: String) : AdUnit<AppOpenAd>(id, name) {
                     }
 
                     override fun onAdShowedFullScreenContent() {
+                        AdLogger.logShowed("APP_OPEN", name, id)
                         Log.d(TAG, "onAdShowed: $name $id")
                         onAdShowed()
                     }
@@ -163,6 +171,7 @@ class AppOpenAdUnit(id: String, name: String) : AdUnit<AppOpenAd>(id, name) {
         AppOpenAd.load(context, id, request, object : AppOpenAd.AppOpenAdLoadCallback() {
             override fun onAdLoaded(ad: AppOpenAd) {
                 EventTracking.logEvent("${name}_loaded")
+                AdLogger.logLoaded("APP_OPEN", name, id)
                 Log.d(TAG, "onAdLoaded: $name $id")
                 ad.setOnPaidEventListener { value ->
                     LogEventManager.logPaidAdImpression(
@@ -177,6 +186,7 @@ class AppOpenAdUnit(id: String, name: String) : AdUnit<AppOpenAd>(id, name) {
 
             override fun onAdFailedToLoad(error: LoadAdError) {
                 EventTracking.logEvent("${name}_failed")
+                AdLogger.logLoadFailed("APP_OPEN", name, id, "${error.code} - ${error.message}")
                 Log.e(TAG, "onAdFailedToLoad: $name $id ${error.message}")
                 if (cont.isActive) cont.resume(null)
             }

@@ -18,6 +18,7 @@ import com.tomo.monetization.analytics.AdRevenueAdType
 import com.tomo.monetization.analytics.LogEventManager
 import com.tomo.monetization.billing.AppBilling
 import com.tomo.monetization.util.EventTracking
+import com.tomo.monetization.util.AdLogger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
@@ -35,21 +36,25 @@ class NativeAdUnit(id: String, name: String) : AdUnit<NativeAd>(id, name) {
 
         if (!enabled || AppBilling.isPurchasedAdFree) {
             updateStatus(AdStatus.Failure)
+            AdLogger.logLoadFailed("NATIVE", name, id, "Ad is disabled or user is Premium")
             Log.d(TAG, "loadAd: $name $id is disabled")
             return false
         }
 
         if (!NetworkManager.isNetworkConnected()) {
             updateStatus(AdStatus.Failure)
+            AdLogger.logLoadFailed("NATIVE", name, id, "No internet connection")
             Log.d(TAG, "loadAd: $name $id no internet")
             return false
         }
 
         if (!shouldLoadAd()) {
+            AdLogger.logLoadFailed("NATIVE", name, id, "Ad already loaded/loading and doesn't need reload")
             Log.d(TAG, "loadAd: $name $id doesn't need to be loaded")
             return true
         }
 
+        AdLogger.logLoadStart("NATIVE", name, id)
         Log.d(TAG, "loadAd: $name $id loading")
         updateStatus(AdStatus.Loading)
 
@@ -73,6 +78,7 @@ class NativeAdUnit(id: String, name: String) : AdUnit<NativeAd>(id, name) {
 
     private suspend fun internalLoadAd(context: Context, onClick: () -> Unit): NativeAd? = suspendCancellableCoroutine { cont ->
         val adLoader = AdLoader.Builder(context, id).forNativeAd { nativeAd ->
+            AdLogger.logLoaded("NATIVE", name, id)
             Log.d(TAG, "onAdLoaded: $name $id")
             EventTracking.logEvent("${name}_loaded")
             nativeAd.setOnPaidEventListener { adValue ->
@@ -97,11 +103,13 @@ class NativeAdUnit(id: String, name: String) : AdUnit<NativeAd>(id, name) {
 
             override fun onAdFailedToLoad(error: LoadAdError) {
                 EventTracking.logEvent("${name}_failed")
+                AdLogger.logLoadFailed("NATIVE", name, id, "${error.code} - ${error.message}")
                 Log.e(TAG, "onAdFailedToLoad: $name $id ${error.message}")
                 if (cont.isActive) cont.resume(null)
             }
 
             override fun onAdImpression() {
+                AdLogger.logImpression("NATIVE", name, id)
                 Log.d(TAG, "onAdImpression: $name $id")
                 EventTracking.logEvent("${name}_view")
                 updateStatus(AdStatus.Shown)
@@ -119,5 +127,10 @@ class NativeAdUnit(id: String, name: String) : AdUnit<NativeAd>(id, name) {
             Log.e(TAG, "loadAd cancelled: $name $id")
             if (cont.isActive) cont.resume(null)
         }
+    }
+
+    override fun release() {
+        ad?.destroy()
+        super.release()
     }
 }

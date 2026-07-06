@@ -24,20 +24,50 @@ class MonetizationBannerView @JvmOverloads constructor(
 
     private var scope: CoroutineScope? = null
     private var observeJob: Job? = null
+    private var pendingAdGroup: BannerAdGroup? = null
+    private var pendingWidthDp: Int = 320
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
         scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+        if (pendingAdGroup != null) {
+            startObserving()
+        }
     }
 
     override fun onDetachedFromWindow() {
         observeJob?.cancel()
         scope?.cancel()
         scope = null
+        val activity = getActivity(context)
+        if (activity == null || activity.isFinishing || activity.isDestroyed) {
+            pendingAdGroup?.release()
+        }
         super.onDetachedFromWindow()
     }
 
+    private fun getActivity(context: Context): Activity? {
+        var ctx = context
+        while (ctx is android.content.ContextWrapper) {
+            if (ctx is Activity) {
+                return ctx
+            }
+            ctx = ctx.baseContext
+        }
+        return null
+    }
+
     fun setAdGroup(adGroup: BannerAdGroup, widthDp: Int = 320) {
+        pendingAdGroup = adGroup
+        pendingWidthDp = widthDp
+        if (isAttachedToWindow) {
+            startObserving()
+        }
+    }
+
+    private fun startObserving() {
+        val adGroup = pendingAdGroup ?: return
+        val widthDp = pendingWidthDp
         observeJob?.cancel()
         val currentScope = scope ?: return
         observeJob = currentScope.launch {
