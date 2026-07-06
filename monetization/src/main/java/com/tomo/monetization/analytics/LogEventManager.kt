@@ -64,9 +64,11 @@ object LogEventManager {
 
         AdjustLog.logAdmobRevenue(adValue)
 
-        FacebookAnalyticsUtil.logPaidAdValueAsPurchaseEvent(
-            context, adValue.valueMicros.toDouble(), adValue.currencyCode
-        )
+        if (Monetization.isFacebookLoggingEnabled) {
+            FacebookAnalyticsUtil.logPaidAdValueAsPurchaseEvent(
+                context, adValue.valueMicros.toDouble(), adValue.currencyCode
+            )
+        }
 
         Monetization.onPaidAdImpressionListener?.onPaidAdImpression(
             adValue, adUnitId, responseInfo, adType
@@ -77,8 +79,12 @@ object LogEventManager {
         Log.d(TAG, "User click ad for ad unit $adUnitId.")
         val bundle = bundleOf("ad_unit_id" to adUnitId)
 
-        FirebaseAnalyticsUtil.logClickAdsEvent(bundle)
-        FacebookAnalyticsUtil.logClickAdsEvent(context, bundle)
+        if (Monetization.isFirebaseLoggingEnabled) {
+            FirebaseAnalyticsUtil.logClickAdsEvent(bundle)
+        }
+        if (Monetization.isFacebookLoggingEnabled) {
+            FacebookAnalyticsUtil.logClickAdsEvent(context, bundle)
+        }
     }
 
     // ------------------------------------------------
@@ -122,9 +128,13 @@ object LogEventManager {
             adSource
         )
 
-        FirebaseAnalyticsUtil.logEventWithAds(bundle)
-        FacebookAnalyticsUtil.logEventWithAds(context, bundle)
-        FacebookAnalyticsUtil.logTotalRevenue001Ad(context, bundle)
+        if (Monetization.isFirebaseLoggingEnabled) {
+            FirebaseAnalyticsUtil.logEventWithAds(bundle)
+        }
+        if (Monetization.isFacebookLoggingEnabled) {
+            FacebookAnalyticsUtil.logEventWithAds(context, bundle)
+            FacebookAnalyticsUtil.logTotalRevenue001Ad(context, bundle)
+        }
     }
 
     private fun logPaidAdImpressionValue(
@@ -150,7 +160,12 @@ object LogEventManager {
 
         AdjustLog.logPaidAdImpressionValue(finalValue, "USD")
         if (adSource.lowercase().contains("applovin"))  AdjustLog.logAdApplovinEvent()
-        FirebaseAnalyticsUtil.logPaidAdImpressionValue(bundle)
-        FacebookAnalyticsUtil.logPaidAdImpressionValue(context, bundle)
+        
+        if (Monetization.isFirebaseLoggingEnabled) {
+            FirebaseAnalyticsUtil.logPaidAdImpressionValue(bundle)
+        }
+        if (Monetization.isFacebookLoggingEnabled) {
+            FacebookAnalyticsUtil.logPaidAdImpressionValue(context, bundle)
+        }
     }
 }

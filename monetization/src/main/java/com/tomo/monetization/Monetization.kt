@@ -98,12 +98,19 @@ object Monetization {
         return distanceShowAds > distanceTime
     }
 
+    var isFacebookLoggingEnabled = true
+        private set
+    var isFirebaseLoggingEnabled = true
+        private set
+
     fun config(
         context: Context,
         adjustConfig: AdjustLogConfig? = null,
         testDeviceIds: List<String>? = null,
         consentTestDevice: String = "",
         enableInitMediation: Boolean = false,
+        enableFacebookLogging: Boolean = true,
+        enableFirebaseLogging: Boolean = true,
         isPremiumProvider: () -> Boolean = { false }
     ) {
         Log.d("", "Monetization ver: 1.1.12")
@@ -113,6 +120,8 @@ object Monetization {
         this.consentTestDevice = consentTestDevice
         this.testDeviceIds = testDeviceIds
         this.enableInitMediation = enableInitMediation
+        this.isFacebookLoggingEnabled = enableFacebookLogging
+        this.isFirebaseLoggingEnabled = enableFirebaseLogging
         this.isPremiumProvider = isPremiumProvider
     }
 
