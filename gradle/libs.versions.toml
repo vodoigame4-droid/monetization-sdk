@@ -1,0 +1,96 @@
+[versions]
+agp = "9.0.1"
+kotlin = "2.3.10"
+coreKtx = "1.17.0"
+junit = "4.13.2"
+junitVersion = "1.1.5"
+espressoCore = "3.5.1"
+appcompat = "1.6.1"
+material = "1.10.0"
+activity = "1.10.0"
+constraintlayout = "2.1.4"
+
+coroutines = "1.10.2"
+startup = "1.2.0"
+kotpref = "2.13.2"
+timber = "5.0.1"
+lifecycle = "2.9.0"
+gmsAds = "23.2.0"
+gmsAdsIdentifier = "18.0.1"
+ump = "3.2.0"
+skeletonlayout = "5.0.0"
+billingKtx = "7.0.0"
+# AdMob mediation adapters
+mediationMeta = "6.21.0.1"
+mediationPangle = "7.9.1.1.0"
+mediationMintegral = "17.0.91.0"
+composeBom = "2025.12.01"
+firebaseBom = "33.1.2"
+appUpdate = "2.1.0"
+preference = "1.2.1"
+guava = "31.1-android"
+shimmer = "0.5.0"
+
+[libraries]
+androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+junit = { group = "junit", name = "junit", version.ref = "junit" }
+androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
+androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
+androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
+material = { group = "com.google.android.material", name = "material", version.ref = "material" }
+androidx-activity = { group = "androidx.activity", name = "activity", version.ref = "activity" }
+androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
+
+
+# TGV modules dependencies
+kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
+androidx-startup = { group = "androidx.startup", name = "startup-runtime", version.ref = "startup" }
+kotpref-core = { group = "com.chibatching.kotpref", name = "kotpref", version.ref = "kotpref" }
+kotpref-initializer = { group = "com.chibatching.kotpref", name = "initializer", version.ref = "kotpref" }
+timber = { group = "com.jakewharton.timber", name = "timber", version.ref = "timber" }
+androidx-constraint = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
+androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycle" }
+androidx-lifecycle-process = { group = "androidx.lifecycle", name = "lifecycle-process", version.ref = "lifecycle" }
+gms-ads = { group = "com.google.android.gms", name = "play-services-ads", version.ref = "gmsAds" }
+gms-adsIdentifier = { group = "com.google.android.gms", name = "play-services-ads-identifier", version.ref = "gmsAdsIdentifier" }
+ump = { group = "com.google.android.ump", name = "user-messaging-platform", version.ref = "ump" }
+skeletonlayout = { group = "com.faltenreich", name = "skeletonlayout", version.ref = "skeletonlayout" }
+billing-ktx = { group = "com.android.billingclient", name = "billing-ktx", version.ref = "billingKtx" }
+# AdMob mediation adapters
+mediation-meta = { group = "com.google.ads.mediation", name = "facebook", version.ref = "mediationMeta" }
+mediation-pangle = { group = "com.google.ads.mediation", name = "pangle", version.ref = "mediationPangle" }
+mediation-mintegral = { group = "com.google.ads.mediation", name = "mintegral", version.ref = "mediationMintegral" }
+
+# Monetization Module additions
+androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
+androidx-compose-ui = { group = "androidx.compose.ui", name = "ui" }
+androidx-compose-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics" }
+androidx-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
+androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
+androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activity" }
+androidx-lifecycle-runtime-compose = { group = "androidx.lifecycle", name = "lifecycle-runtime-compose", version.ref = "lifecycle" }
+coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "coroutines" }
+coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
+
+play-services-ads = { group = "com.google.android.gms", name = "play-services-ads", version.ref = "gmsAds" }
+user-messaging-platform = { group = "com.google.android.ump", name = "user-messaging-platform", version.ref = "ump" }
+shimmer = { group = "com.facebook.shimmer", name = "shimmer", version.ref = "shimmer" }
+
+firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }
+firebase-analytics = { group = "com.google.firebase", name = "firebase-analytics" }
+firebase-remote-config = { group = "com.google.firebase", name = "firebase-config" }
+
+app-update-ktx = { group = "com.google.android.play", name = "app-update-ktx", version.ref = "appUpdate" }
+androidx-preference-ktx = { group = "androidx.preference", name = "preference-ktx", version.ref = "preference" }
+guava = { group = "com.google.guava", name = "guava", version.ref = "guava" }
+
+[bundles]
+androidx-core = ["androidx-core-ktx"]
+compose-core = ["androidx-compose-ui", "androidx-compose-ui-graphics", "androidx-compose-ui-tooling-preview", "androidx-compose-material3", "androidx-activity-compose", "androidx-lifecycle-runtime-compose", "androidx-lifecycle-runtime-ktx"]
+firebase = ["firebase-analytics", "firebase-remote-config"]
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+android-library = { id = "com.android.library", version.ref = "agp" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
