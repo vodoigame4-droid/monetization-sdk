@@ -71,7 +71,11 @@ class MonetizationBannerView @JvmOverloads constructor(
         observeJob?.cancel()
         val currentScope = scope ?: return
         observeJob = currentScope.launch {
-            val activity = context as? Activity ?: return@launch
+            val activity = getActivity(context)
+            if (activity == null) {
+                android.util.Log.w("MonetizationBannerView", "startObserving: cannot find Activity context for Banner ad group")
+                return@launch
+            }
 
             combine(adGroup.statusFlow, adGroup.enabledFlow) { status, enabled ->
                 if (adGroup.getLoadedAd() == null &&

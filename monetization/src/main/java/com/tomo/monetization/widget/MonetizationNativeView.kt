@@ -94,7 +94,11 @@ class MonetizationNativeView @JvmOverloads constructor(
         val inflater = LayoutInflater.from(context)
 
         observeJob = currentScope.launch {
-            val activity = context as? Activity ?: return@launch
+            val activity = getActivity(context)
+            if (activity == null) {
+                android.util.Log.w("MonetizationNativeView", "startObserving: cannot find Activity context for Native ad group")
+                return@launch
+            }
 
             combine(adGroup.statusFlow, adGroup.enabledFlow) { status, enabled ->
                 if (adGroup.getLoadedAd() == null &&
