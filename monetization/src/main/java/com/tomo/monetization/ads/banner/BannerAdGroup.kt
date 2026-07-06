@@ -86,4 +86,11 @@ class BannerAdGroup(
             unit.release()
         }
     }
+
+    fun clone(): BannerAdGroup {
+        val newUnits = adUnits.map { BannerAdUnit(it.id, it.name, it.isCollapsible) }
+        val newGroup = BannerAdGroup(newUnits, name, coroutineScope)
+        newGroup.config(*adUnits.map { it.enabled }.toBooleanArray())
+        return newGroup
+    }
 }

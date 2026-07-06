@@ -92,4 +92,11 @@ class NativeAdGroup(
             unit.release()
         }
     }
+
+    fun clone(): NativeAdGroup {
+        val newUnits = adUnits.map { NativeAdUnit(it.id, it.name) }
+        val newGroup = NativeAdGroup(newUnits, name, isFullScreen, reloadAfterVideo, coroutineScope)
+        newGroup.config(*adUnits.map { it.enabled }.toBooleanArray())
+        return newGroup
+    }
 }
