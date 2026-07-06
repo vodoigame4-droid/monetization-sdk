@@ -146,4 +146,6 @@ object Monetization {
     ) {
         com.tomo.monetization.ads.AdsConfigLoader.loadConfigFromJson(context, jsonString, resumeActivities)
     }
+
+    var onPaidAdImpressionListener: com.tomo.monetization.analytics.OnPaidAdImpressionListener? = null
 }

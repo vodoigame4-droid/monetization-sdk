@@ -13,6 +13,7 @@ import com.tomo.monetization.analytics.adjust.AdjustLog
 import com.tomo.monetization.analytics.adjust.AdjustLogConfig
 import com.tomo.monetization.analytics.facebook.FacebookAnalyticsUtil
 import com.tomo.monetization.analytics.firebase.FirebaseAnalyticsUtil
+import com.tomo.monetization.Monetization
 
 @SuppressLint("StaticFieldLeak")
 object LogEventManager {
@@ -65,6 +66,10 @@ object LogEventManager {
 
         FacebookAnalyticsUtil.logPaidAdValueAsPurchaseEvent(
             context, adValue.valueMicros.toDouble(), adValue.currencyCode
+        )
+
+        Monetization.onPaidAdImpressionListener?.onPaidAdImpression(
+            adValue, adUnitId, responseInfo, adType
         )
     }
 
