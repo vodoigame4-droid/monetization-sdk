@@ -49,23 +49,23 @@ object LogEventManager {
         val valueMicros = adValue.valueMicros.toFloat()
         val precision = adValue.precisionType
         val network = responseInfo.mediationAdapterClassName
-        val loadedAdapter: AdapterResponseInfo = responseInfo.loadedAdapterResponseInfo ?: return
-        val adSourceName = loadedAdapter.adSourceName
+        val loadedAdapter: AdapterResponseInfo? = responseInfo.loadedAdapterResponseInfo
+        val adSourceName = loadedAdapter?.adSourceName ?: "AdMob"
 
-//        logEventWithAds(
-//            revenue = valueMicros,
-//            precision = precision,
-//            adUnitId = adUnitId,
-//            network = network,
-//            adType = adType,
-//            adSource = adSourceName
-//        )
+        logEventWithAds(
+            revenue = valueMicros,
+            precision = precision,
+            adUnitId = adUnitId,
+            network = network,
+            adType = adType,
+            adSource = adSourceName
+        )
 
         AdjustLog.logAdmobRevenue(adValue)
 
-//        FacebookAnalyticsUtil.logPaidAdValueAsPurchaseEvent(
-//            context, adValue.valueMicros.toDouble(), adValue.currencyCode
-//        )
+        FacebookAnalyticsUtil.logPaidAdValueAsPurchaseEvent(
+            context, adValue.valueMicros.toDouble(), adValue.currencyCode
+        )
     }
 
     fun logClickAdsEvent(adUnitId: String?) {
