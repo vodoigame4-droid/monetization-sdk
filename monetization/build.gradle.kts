@@ -22,7 +22,7 @@ if (localPropertiesFile.exists()) {
 
 android {
     namespace = "com.tomo.monetization"
-    compileSdk = 34
+    compileSdk = 36
 
     defaultConfig {
         minSdk = 26
@@ -61,7 +61,7 @@ afterEvaluate {
             register<MavenPublication>("release") {
                 groupId = "com.github.vodoigame4-droid"
                 artifactId = "monetization-sdk"
-                version = "1.0.7"
+                version = "1.0.8"
 
                 from(components["release"])
             }
