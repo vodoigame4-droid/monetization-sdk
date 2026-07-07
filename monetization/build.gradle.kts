@@ -22,7 +22,7 @@ if (localPropertiesFile.exists()) {
 
 android {
     namespace = "com.tomo.monetization"
-    compileSdk = 34
+    compileSdk = 36
 
     defaultConfig {
         minSdk = 26
