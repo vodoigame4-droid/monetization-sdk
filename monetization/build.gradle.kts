@@ -22,7 +22,7 @@ if (localPropertiesFile.exists()) {
 
 android {
     namespace = "com.tomo.monetization"
-    compileSdk = 36
+    compileSdk = 34
 
     defaultConfig {
         minSdk = 26
@@ -61,7 +61,7 @@ afterEvaluate {
             register<MavenPublication>("release") {
                 groupId = "com.github.vodoigame4-droid"
                 artifactId = "monetization-sdk"
-                version = "1.0.6"
+                version = "1.0.7"
 
                 from(components["release"])
             }
@@ -113,7 +113,7 @@ dependencies {
     api("com.unity3d.ads:unity-ads:4.18.0")
     api("com.google.ads.mediation:unity:4.18.0.0")
     api("com.google.code.gson:gson:2.13.2")
-    api("com.facebook.android:facebook-android-sdk:latest.release")
+    api("com.facebook.android:facebook-android-sdk:17.0.0")
     api("com.adjust.sdk:adjust-android:5.5.0")
     api("com.android.installreferrer:installreferrer:2.2")
     api("com.google.android.gms:play-services-ads-identifier:18.3.0")
