@@ -16,6 +16,8 @@ import com.tomo.monetization.AdType
 import com.tomo.monetization.util.launchWhenResumed
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
@@ -26,7 +28,15 @@ import kotlin.reflect.KClass
 
 object AppOpenResumeManager : Application.ActivityLifecycleCallbacks, LifecycleEventObserver {
     private const val TAG = "AppOpenManager"
-    var isAppOpenAdShowing = false
+    
+    private val _isAppOpenAdShowing = MutableStateFlow(false)
+    val isAppOpenAdShowingFlow = _isAppOpenAdShowing.asStateFlow()
+
+    var isAppOpenAdShowing: Boolean
+        get() = _isAppOpenAdShowing.value
+        set(value) {
+            _isAppOpenAdShowing.value = value
+        }
 
     private var adGroup: AppOpenAdGroup? = null
     private var disableAppOpenResumeOnce = false

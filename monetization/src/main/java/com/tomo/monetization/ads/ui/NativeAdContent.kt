@@ -57,6 +57,7 @@ fun NativeAdContent(
     val adStatus by adGroup.statusFlow.collectAsState()
     val enabled by adGroup.enabledFlow.collectAsState()
     val clicked by adGroup.clickedFlow.collectAsState()
+    val isAppOpenAdShowing by AppOpenResumeManager.isAppOpenAdShowingFlow.collectAsState()
     val scope = rememberCoroutineScope()
     var nativeAd by remember { mutableStateOf<NativeAd?>(null) }
     var firstTimeInitialized by remember { mutableStateOf(false) }
@@ -151,8 +152,8 @@ fun NativeAdContent(
             },
             modifier = modifier
         )
-        LaunchedEffect(Unit) {
-            if (autoLoadAd && !AppOpenResumeManager.isAppOpenAdShowing) {
+        LaunchedEffect(isAppOpenAdShowing) {
+            if (autoLoadAd && !isAppOpenAdShowing) {
                 if (adGroup.status != AdStatus.Shown || !showAfterImpression) {
                     adGroup.loadAds(activity)
                 }

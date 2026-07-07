@@ -59,6 +59,7 @@ fun BannerAdContent(
     var lifecycleState by remember { mutableStateOf(Lifecycle.State.INITIALIZED) }
     val adStatus by adGroup.statusFlow.collectAsState()
     val enabled by adGroup.enabledFlow.collectAsState()
+    val isAppOpenAdShowing by AppOpenResumeManager.isAppOpenAdShowingFlow.collectAsState()
     val scope = rememberCoroutineScope()
     val transitionSpec: AnimatedContentTransitionScope<AdView?>.() -> ContentTransform = {
         fadeIn(animationSpec = tween(500)) togetherWith fadeOut(animationSpec = tween(500))
@@ -92,7 +93,7 @@ fun BannerAdContent(
             }
         }
 
-        LaunchedEffect(adGroup, containerWidthDp) {
+        LaunchedEffect(adGroup, containerWidthDp, isAppOpenAdShowing) {
             snapshotFlow { Pair(adStatus, lifecycleState) }
                 .collect { (status, state) ->
                     if (state.isAtLeast(Lifecycle.State.RESUMED)) {
@@ -103,7 +104,7 @@ fun BannerAdContent(
                             status != AdStatus.Failure &&
                             status != AdStatus.Loading &&
                             enabled &&
-                            !AppOpenResumeManager.isAppOpenAdShowing
+                            !isAppOpenAdShowing
                         ) {
                             adGroup.loadAds(activity, containerWidthDp)
                         }

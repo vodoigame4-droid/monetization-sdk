@@ -3,9 +3,15 @@ import java.util.Properties
 
 plugins {
     id("com.android.library")
-    id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
     id("maven-publish")
+}
+
+val agpVersion = com.android.Version.ANDROID_GRADLE_PLUGIN_VERSION
+val isAgp9OrAbove = agpVersion.split(".")[0].toIntOrNull()?.let { it >= 9 } ?: false
+
+if (!isAgp9OrAbove) {
+    project.plugins.apply("org.jetbrains.kotlin.android")
 }
 
 val localProperties = Properties()
@@ -42,10 +48,6 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = "17"
-    }
-
     buildFeatures {
         compose = true
         buildConfig = true
@@ -59,7 +61,7 @@ afterEvaluate {
             register<MavenPublication>("release") {
                 groupId = "com.github.vodoigame4-droid"
                 artifactId = "monetization-sdk"
-                version = "1.0.5"
+                version = "1.0.6"
 
                 from(components["release"])
             }
@@ -119,4 +121,10 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+}
+
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+    }
 }
