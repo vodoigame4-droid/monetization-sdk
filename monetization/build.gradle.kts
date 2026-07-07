@@ -2,8 +2,9 @@ import java.io.FileInputStream
 import java.util.Properties
 
 plugins {
-    alias(libs.plugins.android.library)
-    alias(libs.plugins.kotlin.compose)
+    id("com.android.library")
+    id("org.jetbrains.kotlin.android")
+    id("org.jetbrains.kotlin.plugin.compose")
     id("maven-publish")
 }
 
@@ -15,9 +16,7 @@ if (localPropertiesFile.exists()) {
 
 android {
     namespace = "com.tomo.monetization"
-    compileSdk {
-        version = release(36)
-    }
+    compileSdk = 34
 
     defaultConfig {
         minSdk = 26
@@ -41,6 +40,10 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = "17"
     }
 
     buildFeatures {
@@ -80,11 +83,7 @@ dependencies {
 
     // Ads
     api(libs.play.services.ads)
-    api("com.google.android.ump:user-messaging-platform:${libs.versions.ump.get()}") {
-        version {
-            strictly(libs.versions.ump.get())
-        }
-    }
+    api(libs.user.messaging.platform)
     api(libs.shimmer)
 
     // Firebase

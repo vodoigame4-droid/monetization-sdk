@@ -11,6 +11,7 @@ import com.tomo.monetization.ads.base.AdStatus
 import com.tomo.monetization.ads.base.AdUnitGroup
 import com.tomo.monetization.util.EventTracking
 import com.tomo.monetization.util.AdLogger
+import com.tomo.monetization.util.getLifecycleScope
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -141,7 +142,8 @@ class RewardedAdGroup(
     fun loadAndShow(
         activity: Activity,
         callback: RewardedAdCallback,
-        timeout: Long = 10_000L
+        timeout: Long = 10_000L,
+        showLoading: Boolean = true
     ) {
         if (!enabled) {
             AdLogger.logLoadFailed("REWARDED", name, "", "Group is disabled")
@@ -161,37 +163,50 @@ class RewardedAdGroup(
             return
         }
 
-        val loadingDialog = com.tomo.monetization.util.PrepareLoadingAdsDialog(activity).apply {
-            show()
+        if (activity.isFinishing || activity.isDestroyed) {
+            callback.onNextAction(false)
+            return
         }
 
-        coroutineScope.launch(Dispatchers.Main) {
-            loadAds(activity, timeout = timeout)
-
-            val startTime = System.currentTimeMillis()
-            var isAdLoaded = false
-
-            while (System.currentTimeMillis() - startTime < timeout) {
-                if (status == AdStatus.Ready) {
-                    isAdLoaded = true
-                    break
-                }
-                if (status == AdStatus.Failure) {
-                    break
-                }
-                delay(100)
+        val loadingDialog = if (showLoading) {
+            com.tomo.monetization.util.PrepareLoadingAdsDialog(activity).apply {
+                try {
+                    show()
+                } catch (_: Exception) {}
             }
+        } else {
+            null
+        }
 
+        activity.getLifecycleScope().launch(Dispatchers.Main) {
             try {
-                if (loadingDialog.isShowing) {
-                    loadingDialog.dismiss()
-                }
-            } catch (_: Exception) {}
+                loadAds(activity, timeout = timeout)
 
-            if (isAdLoaded) {
-                showAds(activity, callback)
-            } else {
-                callback.onNextAction(false)
+                val startTime = System.currentTimeMillis()
+                var isAdLoaded = false
+
+                while (System.currentTimeMillis() - startTime < timeout) {
+                    if (status == AdStatus.Ready) {
+                        isAdLoaded = true
+                        break
+                    }
+                    if (status == AdStatus.Failure) {
+                        break
+                    }
+                    delay(100)
+                }
+
+                if (isAdLoaded) {
+                    showAds(activity, callback)
+                } else {
+                    callback.onNextAction(false)
+                }
+            } finally {
+                try {
+                    if (loadingDialog?.isShowing == true) {
+                        loadingDialog.dismiss()
+                    }
+                } catch (_: Exception) {}
             }
         }
     }
