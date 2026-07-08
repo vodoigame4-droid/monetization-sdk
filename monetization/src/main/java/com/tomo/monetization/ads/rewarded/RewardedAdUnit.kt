@@ -60,20 +60,28 @@ class RewardedAdUnit(id: String, name: String) : AdUnit<RewardedAd>(id, name) {
         Log.d(TAG, "loadAd: $name $id loading")
         updateStatus(AdStatus.Loading)
 
-        return withContext(Dispatchers.Main) {
-            val ad = withTimeoutOrNull(timeout) {
-                internalLoadAd(context)
-            }
+        var success = false
+        try {
+            success = withContext(Dispatchers.Main) {
+                val ad = withTimeoutOrNull(timeout) {
+                    internalLoadAd(context)
+                }
 
-            if (ad != null) {
-                ad.setImmersiveMode(true)
-                this@RewardedAdUnit.ad = ad
-                adLoadedTimestamp = System.currentTimeMillis()
-                updateStatus(AdStatus.Ready)
-                true
-            } else {
+                if (ad != null) {
+                    ad.setImmersiveMode(true)
+                    this@RewardedAdUnit.ad = ad
+                    adLoadedTimestamp = System.currentTimeMillis()
+                    updateStatus(AdStatus.Ready)
+                    true
+                } else {
+                    updateStatus(AdStatus.Failure)
+                    false
+                }
+            }
+            return success
+        } finally {
+            if (!success && status == AdStatus.Loading) {
                 updateStatus(AdStatus.Failure)
-                false
             }
         }
     }

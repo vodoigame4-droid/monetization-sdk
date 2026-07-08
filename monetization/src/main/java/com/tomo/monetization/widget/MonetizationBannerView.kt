@@ -91,7 +91,7 @@ class MonetizationBannerView @JvmOverloads constructor(
                     removeAllViews()
                     return@collectLatest
                 }
-                if (status == AdStatus.Ready) {
+                if (status == AdStatus.Ready || status == AdStatus.Shown) {
                     val adView = adGroup.getLoadedAd()
                     if (adView != null) {
                         removeAllViews()

@@ -57,20 +57,28 @@ class BannerAdUnit(id: String, name: String, val isCollapsible: Boolean = false)
         Log.d(TAG, "loadAd: $name $id loading")
         updateStatus(AdStatus.Loading)
 
-        return withContext(Dispatchers.Main) {
-            val ad = withTimeoutOrNull(timeout) {
-                internalLoadAd(context, width)
-            }
+        var success = false
+        try {
+            success = withContext(Dispatchers.Main) {
+                val ad = withTimeoutOrNull(timeout) {
+                    internalLoadAd(context, width)
+                }
 
-            if (ad != null) {
-                this@BannerAdUnit.ad?.destroy()
-                this@BannerAdUnit.ad = ad
-                adLoadedTimestamp = System.currentTimeMillis()
-                updateStatus(AdStatus.Ready)
-                true
-            } else {
+                if (ad != null) {
+                    this@BannerAdUnit.ad?.destroy()
+                    this@BannerAdUnit.ad = ad
+                    adLoadedTimestamp = System.currentTimeMillis()
+                    updateStatus(AdStatus.Ready)
+                    true
+                } else {
+                    updateStatus(AdStatus.Failure)
+                    false
+                }
+            }
+            return success
+        } finally {
+            if (!success && status == AdStatus.Loading) {
                 updateStatus(AdStatus.Failure)
-                false
             }
         }
     }
