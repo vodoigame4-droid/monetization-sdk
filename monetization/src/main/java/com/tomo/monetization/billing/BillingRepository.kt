@@ -5,7 +5,7 @@ import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.ConsumeParams
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.QueryProductDetailsParams
-import com.android.billingclient.api.ProductDetailsResult
+import com.android.billingclient.api.QueryProductDetailsResult
 import com.android.billingclient.api.QueryPurchasesParams
 import com.android.billingclient.api.acknowledgePurchase
 import com.android.billingclient.api.queryProductDetails
@@ -27,7 +27,7 @@ class BillingRepository(billingClientProvider: BillingClientProvider) {
         return billingClient.queryPurchasesAsync(queryPurchaseParams).purchasesList
     }
 
-    suspend fun getProducts(productDetailsParams: QueryProductDetailsParams): ProductDetailsResult? {
+    suspend fun getProducts(productDetailsParams: QueryProductDetailsParams): QueryProductDetailsResult? {
         val connectIfNeeded = connectIfNeeded()
         if (!connectIfNeeded)
             return null

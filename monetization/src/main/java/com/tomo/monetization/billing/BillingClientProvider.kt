@@ -10,6 +10,7 @@ class BillingClientProvider(
     updateListener: PurchasesUpdatedListener
 ) {
     val billingClient = BillingClient.newBuilder(context)
+        .enableAutoServiceReconnection()
         .enablePendingPurchases(
             PendingPurchasesParams.newBuilder()
                 .enablePrepaidPlans()

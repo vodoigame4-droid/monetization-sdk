@@ -223,8 +223,9 @@ object AppBilling {
         }
 
         billing.getBillingClient()
-            .queryProductDetailsAsync(queryProductDetailsParams) { billingResult, productResult ->
+            .queryProductDetailsAsync(queryProductDetailsParams) { billingResult, queryProductDetailsResult ->
                 if (billingResult.responseCode == BillingResponseCode.OK) {
+                    val productResult = queryProductDetailsResult.productDetailsList
                     var offerToken = ""
                     val productDetails = if (billingItem.productType == BillingClient.ProductType.SUBS) {
                         productResult.firstOrNull { productDetails ->

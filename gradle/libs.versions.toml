@@ -19,7 +19,7 @@ gmsAds = "23.2.0"
 gmsAdsIdentifier = "18.0.1"
 ump = "3.2.0"
 skeletonlayout = "5.0.0"
-billingKtx = "7.0.0"
+billingKtx = "9.1.0"
 # AdMob mediation adapters
 mediationMeta = "6.21.0.1"
 mediationPangle = "7.9.1.1.0"
