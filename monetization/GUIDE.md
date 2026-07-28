@@ -1,24 +1,151 @@
 # Monetization Module Guide
 
-Integration guide for the Monetization module (Ads, Analytics, Billing) into the project.
+Integration guide for the Monetization module (**Ads, Analytics, Consent (CMP), and In-App Billing**) into the project.
+
+---
 
 ## 1. Introduction
-The `monetization` module provides ready-to-use wrappers for handling Ads (Banner, Interstitial, Native, Rewarded, App Open), Consent (CMP), and Analytics.
-The module handles SDK initialization and Consent Requests (CMP) automatically.
 
-## 2. Integration Steps (Step-by-Step)
+The `monetization` module provides ready-to-use wrappers for handling:
+*   **Ads**: Banner, Interstitial, Native, Rewarded, and App Open Ads (with Waterfall support).
+*   **Consent (CMP)**: User messaging platform / GDPR consent flow.
+*   **Analytics**: Event tracking wrappers.
+*   **In-App Billing (IAP & Subscriptions)**: Querying products, launching purchases, acknowledging purchases (`AcknowledgePurchase`), consuming items (`ConsumePurchase`), and tracking ad-free status.
+
+---
+
+## 2. In-App Billing (IAP & Subscriptions)
+
+Google Play requires all purchases (subscriptions and non-consumables) to be **acknowledged** within 3 days. If a purchase is not acknowledged, Google Play automatically cancels the purchase and refunds the user.
+
+### Step 1: Initialize Billing SDK
+Initialize `AppBilling` in your `Application` or `SplashActivity`:
+
+```kotlin
+// Application.kt or SplashActivity.kt
+AppBilling.init(applicationContext)
+```
+
+---
+
+### Step 2: Check Purchased Status & Observe Ad-Free State
+SDK maintains `isAdFreeFlow` (`StateFlow<Boolean>`) to track whether the user has active subscriptions or acknowledged purchases.
+
+```kotlin
+// 1. Check purchased status asynchronously (IO thread)
+lifecycleScope.launch {
+    val isPurchased: Boolean = AppBilling.checkPurchased()
+    Log.d("Billing", "Is user ad-free: $isPurchased")
+}
+
+// 2. Observe ad-free state continuously
+lifecycleScope.launch {
+    AppBilling.isAdFreeFlow.collect { isAdFree ->
+        if (isAdFree) {
+            // Hide ads UI
+        }
+    }
+}
+```
+
+---
+
+### Step 3: Fetch Product Details (Subscriptions & In-App Items)
+SDK simplifies querying product details into clean `IAPBillingItem` objects.
+
+```kotlin
+// Fetch Subscription products
+lifecycleScope.launch {
+    val subProductIds = listOf("sub_monthly_id", "sub_yearly_id")
+    val subsList: List<IAPBillingItem> = AppBilling.getSubsProductsList(subProductIds)
+    
+    subsList.forEach { item ->
+        Log.d("Billing", "ID: ${item.productId}, Price: ${item.formattedPrice}")
+    }
+}
+
+// Fetch In-App products (Non-consumable or Consumable)
+lifecycleScope.launch {
+    val inAppProductIds = listOf("remove_ads_lifetime_id", "coin_pack_100")
+    val inAppList: List<IAPBillingItem> = AppBilling.getInAppProductsList(inAppProductIds)
+}
+```
+
+---
+
+### Step 4: Launch Purchase Flow
+To launch the Google Play billing UI for an item:
+
+```kotlin
+val itemToBuy: IAPBillingItem = subsList.first()
+
+AppBilling.purchaseIAPBillingItem(
+    activity = this@PaywallActivity,
+    billingItem = itemToBuy
+)
+```
+
+---
+
+### Step 5: Listen to Purchase Updates, Acknowledge & Consume
+
+Listen to `AppBilling.billingUpdateListener.purchaseUpdate` flow to handle transaction results.
+
+> [!IMPORTANT]
+> **Acknowledge Purchase Requirements:**
+> *   **Subscriptions / Non-Consumables (e.g. Remove Ads)**: Must call `AppBilling.acknowledgePurchase(purchase)`.
+> *   **Consumable In-Apps (e.g. Coins/Gems)**: Must call `AppBilling.consumePurchase(purchase)`.
+
+```kotlin
+// In ViewModel or PaywallActivity onCreate / lifecycleScope
+lifecycleScope.launch {
+    AppBilling.billingUpdateListener.purchaseUpdate.collect { update ->
+        val (billingResult, purchases) = update ?: return@collect
+
+        if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
+            purchases.forEach { purchase ->
+                if (purchase.purchaseState == Purchase.PurchaseState.PURCHASED) {
+                    
+                    // Case A: Subscription or Non-Consumable Item -> Acknowledge Purchase
+                    if (!purchase.isAcknowledged) {
+                        lifecycleScope.launch {
+                            val result = AppBilling.acknowledgePurchase(purchase)
+                            if (result?.responseCode == BillingClient.BillingResponseCode.OK) {
+                                Log.d("Billing", "Purchase acknowledged successfully!")
+                                // Refresh ad-free status
+                                AppBilling.checkPurchased()
+                            }
+                        }
+                    }
+
+                    // Case B: Consumable Item (Coins/Gems) -> Consume Purchase
+                    /*
+                    lifecycleScope.launch {
+                        val consumeResult = AppBilling.consumePurchase(purchase)
+                        if (consumeResult.responseCode == BillingClient.BillingResponseCode.OK) {
+                            Log.d("Billing", "Item consumed successfully, deliver rewards!")
+                        }
+                    }
+                    */
+                }
+            }
+        } else {
+            Log.e("Billing", "Purchase failed: ${billingResult.debugMessage}")
+        }
+    }
+}
+```
+
+---
+
+## 3. Ads Integration (Step-by-Step)
 
 ### Step 1: Create AdsProvider
-Create an `AdsProvider` object (Singleton) to manage all ad IDs in the app. This makes management easier and allows calling ads from anywhere.
-
-Each `AdGroup` can contain multiple IDs (Waterfall) to optimize fill rates.
+Create an `AdsProvider` singleton to manage all ad unit groups (Waterfall strategy):
 
 ```kotlin
 // AdsProvider.kt
 object AdsProvider {
-    // Defines a Waterfall: High -> Medium -> Low
-    // Ads load sequentially: If High fails/disabled -> load Medium -> ...
-    // If an ad loads successfully, it stops and uses that ad.
     val interSplashAd = InterstitialAdGroup(
         BuildConfig.inter_splash_high_id to "inter_splash_high",
         BuildConfig.inter_splash_medium_id to "inter_splash_medium",
@@ -30,26 +157,23 @@ object AdsProvider {
         BuildConfig.native_onboard_high_id to "native_onboard_high",
         BuildConfig.native_onboard_floor_id to "native_onboard_floor",
         name = "native_onboard",
-        isFullScreen = false // Set true if it is a full screen native ad
+        isFullScreen = false
     )
-    
-    // ... Other ad types
 }
 ```
 
-### Step 2: Init Configuration & Remote Config
-During initialization (e.g., in `SplashActivity` or `FirstOpenViewModel`), you need to fetch the configuration from the server (Firebase Remote Config) to enable/disable specific ad IDs.
+---
 
-After configuration is complete, you **MUST** call `FOManager.finishSplashInitialization()` to signal that the initialization process is finished and to start the First Open flow (or navigate to Main).
+### Step 2: Configure via Remote Config & Complete Initialization
+Fetch configuration flags from Remote Config, apply them using `.config()`, and call `FOManager.finishSplashInitialization()`.
 
-```kotlinfun onRemoteConfigReady(config: FirebaseRemoteConfig) {
-    
-    // 1. Config enable/disable ad IDs in AdGroup
-    // You must pass as many boolean values as there are IDs in the AdGroup
+```kotlin
+fun onRemoteConfigReady(config: FirebaseRemoteConfig) {
+    // 1. Enable/disable specific ad unit IDs in AdGroup
     AdsProvider.interSplashAd.config(
-        config.getBoolean("enable_inter_splash_high"),   // ID 1
-        config.getBoolean("enable_inter_splash_medium"), // ID 2
-        config.getBoolean("enable_inter_splash_floor")   // ID 3
+        config.getBoolean("enable_inter_splash_high"),
+        config.getBoolean("enable_inter_splash_medium"),
+        config.getBoolean("enable_inter_splash_floor")
     )
 
     AdsProvider.nativeOnboardAd.config(
@@ -57,51 +181,42 @@ After configuration is complete, you **MUST** call `FOManager.finishSplashInitia
         config.getBoolean("enable_native_onboard_floor")
     )
 
-    // 2. Global Config (Optional)
-    // Monetization.updateAdsEnable(config.getBoolean("enable_all_ads"))
-
-    // 3. Finish Init -> Start app flow
+    // 2. Finish Splash Init -> Start First Open flow / Navigate to Main
     FOManager.finishSplashInitialization()
 }
-// Example in ViewModel handling Splash/FirstOpen
-
 ```
 
-**How it works:**
-*   **Sequential Loading**: `AdGroup` will load each Unit ID sequentially in the order declared.
-*   **Enable/Disable**: If a Unit ID is disabled (via the `config` function), the SDK will skip it and try the next Unit ID.
-*   **Stop on Success**: As soon as an ad loads successfully, the loading process stops.
+---
 
 ### Step 3: Load Ads
-Call `loadAds` at appropriate times (e.g., `onResume` of an Activity, or after init configuration is done).
 
 ```kotlin
-// MainActivity.kt
 override fun onResume() {
     super.onResume()
     
-    // Load App Open Ad (Automatically shows when available)
+    // Load App Open Resume Ad
     AppOpenResumeManager.loadAds(this) 
     
-    // Pre-load other ads
+    // Pre-load Waterfall Ads
     AdsProvider.interSplashAd.loadAds(this)
     AdsProvider.nativeOnboardAd.loadAds(this)
 }
 ```
 
+---
+
 ### Step 4: Display Ads
 
-#### 1. Interstitial Ad
+#### Interstitial Ad
 ```kotlin
 AdsProvider.interSplashAd.showAds(activity, object : InterstitialAdCallback {
     override fun onNextAction(show: Boolean) {
-        // Callback when ad is closed or failed to show -> Navigate to next screen
         navigateToNextScreen()
     }
 })
 ```
 
-#### 2. Native Ad (Compose)
+#### Native Ad (Jetpack Compose)
 ```kotlin
 NativeAdContent(
     adGroup = AdsProvider.nativeOnboardAd,
@@ -109,8 +224,7 @@ NativeAdContent(
 )
 ```
 
-#### 3. App Open Ad
-Setup in `Application` or `MainActivity` for automatic management:
+#### App Open Ad
 ```kotlin
 AppOpenResumeManager.setUpAppOpenResume(
     adId = BuildConfig.app_open_id,
@@ -119,9 +233,13 @@ AppOpenResumeManager.setUpAppOpenResume(
 )
 ```
 
-## 3. Important Notes
-- **Finish Init**: You must call `FOManager.finishSplashInitialization()` for App Open Ad and First Open flows to work correctly, as it marks the moment "Splash is done".
-- **Config param matching**: The number of parameters in `adGroup.config(...)` must match exactly the number of IDs declared in `AdsProvider`. An Exception will be thrown if they do not match.
+---
+
+## 4. Important Notes
+
+*   **Acknowledge Deadline**: Google Play requires purchases to be acknowledged within **3 days**. Always ensure `AppBilling.acknowledgePurchase(purchase)` is called upon receiving a valid purchase.
+*   **Finish Init**: Call `FOManager.finishSplashInitialization()` when Remote Config finishes on Splash screen.
+*   **Waterfall Config Matching**: The number of boolean arguments in `adGroup.config(...)` must match the exact number of IDs declared in `AdsProvider`.
 
 ---
-*Document created for TomoDev Team.*
+*Document updated for TomoDev Team.*
