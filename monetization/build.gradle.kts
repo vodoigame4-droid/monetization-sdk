@@ -61,7 +61,7 @@ afterEvaluate {
             register<MavenPublication>("release") {
                 groupId = "com.github.vodoigame4-droid"
                 artifactId = "monetization-sdk"
-                version = "1.1.1"
+                version = "1.1.2"
 
                 from(components["release"])
             }
