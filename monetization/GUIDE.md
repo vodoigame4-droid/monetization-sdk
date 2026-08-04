@@ -142,6 +142,21 @@ lifecycleScope.launch {
 
 ---
 
+### Step 6: Server-side Verification / Backend API Callback (Optional)
+If your app needs to send `purchaseToken`, `orderId`, or `products` to your backend server whenever a purchase is successfully acknowledged (either on a new purchase or when auto-acknowledged during restore):
+
+```kotlin
+// Register global callback (e.g. in Application.onCreate)
+AppBilling.onPurchaseAcknowledged = { purchase ->
+    Log.d("Billing", "Acknowledged Purchase: ${purchase.products}, Token: ${purchase.purchaseToken}")
+    // Call your Backend API here:
+    // apiRepository.verifyPurchaseOnServer(purchase.purchaseToken, purchase.orderId)
+}
+```
+```
+
+---
+
 ## 3. Ads Integration (Step-by-Step)
 
 ### Step 1: Create AdsProvider

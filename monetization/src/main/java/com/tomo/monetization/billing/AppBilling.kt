@@ -38,6 +38,8 @@ object AppBilling {
 
     val isPurchasedAdFree: Boolean get() = _isAdFreeFlow.value
 
+    var onPurchaseAcknowledged: ((Purchase) -> Unit)? = null
+
     val billingUpdateListener: BillingUpdateListener by lazy {
         BillingUpdateListener()
     }
@@ -108,6 +110,7 @@ object AppBilling {
                 param("purchase_token_part_2", tokenPart2)
                 param("purchase_package_id", productId ?: "")
             }
+            onPurchaseAcknowledged?.invoke(purchase)
         } else {
             EventTracking.logEvent("purchased_not_acknowledged") {
                 param("code", result.responseCode.toLong())
