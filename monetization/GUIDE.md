@@ -31,6 +31,10 @@ AppBilling.init(applicationContext)
 ### Step 2: Check Purchased Status & Observe Ad-Free State
 SDK maintains `isAdFreeFlow` (`StateFlow<Boolean>`) to track whether the user has active subscriptions or acknowledged purchases.
 
+> [!NOTE]
+> **Auto-Recovery & Slow Test Card Handling:**
+> Calling `AppBilling.checkPurchased()` will automatically auto-acknowledge any valid unacknowledged purchases (`PURCHASED` state) — such as when a user exits the app right after paying or when a **Slow Test Card / Pending Payment** is approved by Google Play.
+
 ```kotlin
 // 1. Check purchased status asynchronously (IO thread)
 lifecycleScope.launch {

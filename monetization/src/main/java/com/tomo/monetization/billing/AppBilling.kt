@@ -13,6 +13,7 @@ import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.ConsumeParams
 import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.Purchase
+import com.android.billingclient.api.Purchase.PurchaseState.PENDING
 import com.android.billingclient.api.Purchase.PurchaseState.PURCHASED
 import com.android.billingclient.api.QueryProductDetailsParams
 import com.google.common.collect.ImmutableList
@@ -65,7 +66,20 @@ object AppBilling {
         }
         val allPurchases = subs + inApps
         Log.d(TAG, "Purchased: $allPurchases")
-        val hasPurchase = allPurchases.any { it.isAcknowledged }
+
+        val validPurchases = allPurchases.filter { it.purchaseState == PURCHASED }
+        val pendingPurchases = allPurchases.filter { it.purchaseState == PENDING }
+
+        if (pendingPurchases.isNotEmpty()) {
+            Log.d(TAG, "checkPurchased: Found ${pendingPurchases.size} PENDING purchases (e.g. Slow Test Card)")
+        }
+
+        validPurchases.filter { !it.isAcknowledged }.forEach { unacknowledgedPurchase ->
+            Log.d(TAG, "checkPurchased: Auto-acknowledging unacknowledged purchase: ${unacknowledgedPurchase.products}")
+            acknowledgePurchase(unacknowledgedPurchase)
+        }
+
+        val hasPurchase = validPurchases.isNotEmpty()
         _isAdFreeFlow.value = hasPurchase
         return@withContext hasPurchase
     }
