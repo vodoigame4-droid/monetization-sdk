@@ -113,7 +113,7 @@ object Monetization {
         enableFirebaseLogging: Boolean = true,
         isPremiumProvider: () -> Boolean = { false }
     ) {
-        Log.d("", "Monetization ver: 1.1.2")
+        Log.d("", "Monetization ver: 1.1.3")
         appContext = context
         FOSharedPref.initPrefs(context)
         LogEventManager.initLogEventManager(context, adjustConfig)
