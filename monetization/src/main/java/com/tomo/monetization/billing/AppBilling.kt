@@ -309,9 +309,13 @@ object AppBilling {
             }
         }
 
-        // Priority offer có offerId, if haven't offer of basePlan then take basePlan
+        // Priority offer có offerId, if haven't offer of basePlan then take basePlan.
+        // Group theo cặp (productId, basePlanId): basePlanId chỉ unique trong phạm vi một product,
+        // nếu chỉ group theo basePlanId thì hai product khác nhau trùng tên base plan sẽ đè nhau.
         val listSubscription = buildList {
-            val byBasePlan = allOffers.groupBy { it.second.basePlanId }
+            val byBasePlan = allOffers.groupBy { (product, offer) ->
+                product.productId to offer.basePlanId
+            }
             byBasePlan.forEach { (_, offersOfPlan) ->
                 val withOffer = offersOfPlan.filter { it.second.offerId != null }
                 if (withOffer.isNotEmpty()) addAll(withOffer)
@@ -322,8 +326,19 @@ object AppBilling {
         val items = mutableListOf<IAPBillingItem>()
         listSubscription.forEach { (productDetails, details) ->
             val phases = details.pricingPhases.pricingPhaseList
+            // Ưu tiên phase trả phí định kỳ (INFINITE_RECURRING). Base plan prepaid không có phase
+            // nào mode 1 — khi đó lấy phase có giá cuối cùng, vì Play sắp xếp phase khuyến mãi
+            // trước và phase giá gốc sau cùng.
             val basePhase = phases.firstOrNull { it.recurrenceMode == 1 && it.priceAmountMicros > 0 }
+                ?: phases.lastOrNull { it.priceAmountMicros > 0 }
             val offerPhaseWithPrice = phases.firstOrNull { it.recurrenceMode == 2 && it.priceAmountMicros > 0 }
+            if (basePhase == null) {
+                Log.w(
+                    TAG,
+                    "handleSubsProductDetails: bỏ qua ${productDetails.productId}/${details.basePlanId} " +
+                        "vì không có pricing phase nào có giá (phases=${phases.size})"
+                )
+            }
             basePhase?.let { pricingPhase ->
                 val offerPriceFormat = offerPhaseWithPrice?.let { p ->
                     SubscriptionUtils.formatPrice(p.priceAmountMicros, p.priceCurrencyCode).lowercase()
