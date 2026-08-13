@@ -24,7 +24,19 @@ Initialize `AppBilling` in your `Application` or `SplashActivity`:
 ```kotlin
 // Application.kt or SplashActivity.kt
 AppBilling.init(applicationContext)
+
+// Khai báo phân loại sản phẩm INAPP (nên gọi ngay sau init)
+AppBilling.registerProducts(
+    lifetime = listOf("remove_ads_lifetime_id"),   // gói vĩnh viễn -> tính ad-free, cấm consume
+    consumable = listOf("coin_pack_100"),          // gói tiêu hao   -> không tính ad-free
+)
 ```
+
+> [!IMPORTANT]
+> `registerProducts` quyết định 3 hành vi:
+> * Chỉ `lifetime` (và subscription) mới bật `isAdFreeFlow`. Nếu **không khai báo**, SDK giữ hành vi cũ là *mọi* purchase INAPP đều được coi là ad-free — mua gói coin cũng tắt quảng cáo.
+> * Sản phẩm `consumable` **không** bị `checkPurchased()` auto-acknowledge (consume đã bao hàm acknowledge).
+> * Sản phẩm `lifetime` bị `consumePurchase()` **từ chối** để tránh vô tình xoá quyền vĩnh viễn của user.
 
 ---
 
@@ -72,8 +84,28 @@ lifecycleScope.launch {
 lifecycleScope.launch {
     val inAppProductIds = listOf("remove_ads_lifetime_id", "coin_pack_100")
     val inAppList: List<IAPBillingItem> = AppBilling.getInAppProductsList(inAppProductIds)
+
+    inAppList.forEach { item ->
+        // formattedPrice = giá thực tế phải trả
+        // originalPriceFormat = giá gốc (chỉ có khi offer đang giảm giá) -> dùng để gạch ngang
+        Log.d("Billing", "${item.productId}: ${item.formattedPrice} (was ${item.originalPriceFormat})")
+    }
 }
 ```
+
+> [!NOTE]
+> Khác biệt giữa SUBS và INAPP trong `IAPBillingItem`:
+> | Field | SUBS | INAPP |
+> |---|---|---|
+> | `basePlanId` | id của base plan | luôn `""` |
+> | `recurrenceMode` | 1 = infinite, 2 = finite | luôn `3` (`IAPBillingItem.NON_RECURRING`) |
+> | `offerPriceFormat` | giá phase khuyến mãi | luôn `""` |
+> | `originalPriceFormat` | `""` | giá gốc khi offer đang giảm giá |
+> | `purchaseOptionId` | `null` | id purchase option (Billing 8+) |
+>
+> Một sản phẩm INAPP có nhiều purchase option sẽ trả về nhiều `IAPBillingItem` cùng `productId`.
+> Luôn truyền nguyên object `IAPBillingItem` vào `purchaseIAPBillingItem` — nó mang theo `offerToken`
+> cần thiết để mở đúng offer.
 
 ---
 
@@ -154,6 +186,69 @@ AppBilling.onPurchaseAcknowledged = { purchase ->
 }
 ```
 ```
+
+---
+
+### Step 7: Đọc gói Lifetime & chống consume nhầm
+
+Sau khi đã khai báo `AppBilling.registerProducts(lifetime = ...)` ở Step 1:
+
+```kotlin
+// 1. Trạng thái sở hữu gói vĩnh viễn (được cập nhật mỗi lần checkPurchased())
+lifecycleScope.launch {
+    AppBilling.checkPurchased()
+    if (AppBilling.isLifetimePurchased) {
+        // ẩn nút mua lifetime trên paywall
+    }
+}
+
+// 2. Observe liên tục
+lifecycleScope.launch {
+    AppBilling.isLifetimePurchasedFlow.collect { owned -> /* ... */ }
+}
+
+// 3. Lấy purchase gốc (purchaseToken, orderId) để verify với backend
+lifecycleScope.launch {
+    val lifetimePurchases: List<Purchase> = AppBilling.getLifetimePurchases()
+}
+```
+
+**Chống consume:** `AppBilling.consumePurchase(purchase)` sẽ từ chối mọi purchase thuộc nhóm
+`lifetime` và trả về `BillingResponseCode.DEVELOPER_ERROR` kèm debug message, thay vì gọi
+`consumeAsync`. Nhờ đó vòng lặp xử lý `purchaseUpdate` chung cho cả coin lẫn lifetime không thể vô
+tình xoá quyền vĩnh viễn của user.
+
+---
+
+### Step 8: Consume gói Lifetime để test (DEBUG ONLY)
+
+Gói lifetime là non-consumable nên chỉ mua được **một lần** trên mỗi tài khoản. Để test lại luồng
+mua, cần consume purchase token đó:
+
+```kotlin
+if (BuildConfig.DEBUG) {
+    lifecycleScope.launch {
+        // Consume tất cả gói lifetime đang sở hữu
+        val consumed: List<String> = AppBilling.consumeLifetimePurchaseForTesting()
+
+        // Hoặc chỉ một product id cụ thể
+        // val consumed = AppBilling.consumeLifetimePurchaseForTesting("remove_ads_lifetime_id")
+
+        Log.d("Billing", "Đã reset: $consumed")   // rỗng = không sở hữu gói nào
+    }
+}
+```
+
+Hàm này tự chạy lại `checkPurchased()` sau khi consume, nên `isAdFreeFlow` / `isLifetimePurchasedFlow`
+được đồng bộ ngay.
+
+> [!WARNING]
+> `consumeLifetimePurchaseForTesting()` là hàm **duy nhất** vượt qua được lớp bảo vệ ở Step 7. Luôn
+> bọc trong `BuildConfig.DEBUG` — gọi nhầm trên bản release sẽ xoá quyền vĩnh viễn của user thật và
+> Google Play không hoàn tác được.
+>
+> Lưu ý: chỉ áp dụng cho **INAPP**. Subscription không consume được — muốn reset subscription phải
+> huỷ ở Play Store (test subscription tự hết hạn sau vài phút).
 
 ---
 
