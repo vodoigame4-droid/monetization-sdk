@@ -55,13 +55,31 @@ object AppOpenResumeManager : Application.ActivityLifecycleCallbacks, LifecycleE
         ProcessLifecycleOwner.get().lifecycle.addObserver(this)
     }
 
+    fun getAdGroup(): AppOpenAdGroup? = adGroup
+
+    fun setUpAppOpenResume(
+        adGroup: AppOpenAdGroup,
+        vararg activities: KClass<out Activity>
+    ) {
+        this.adGroup = adGroup
+        showAdActivities = activities.toList()
+    }
+
+    fun setUpAppOpenResume(
+        adGroup: AppOpenAdGroup,
+        activities: List<KClass<out Activity>>
+    ) {
+        this.adGroup = adGroup
+        showAdActivities = activities
+    }
+
     fun setUpAppOpenResume(
         adId: String,
         name: String,
         enabled: Boolean = true,
         vararg activities: KClass<out Activity>
     ) {
-        adGroup = AppOpenAdGroup(
+        this.adGroup = AppOpenAdGroup(
             adUnits = listOf(AppOpenAdUnit(adId, name)),
             name = name,
         ).apply {
@@ -194,19 +212,23 @@ object AppOpenResumeManager : Application.ActivityLifecycleCallbacks, LifecycleE
 
             if (!allow) return
 
+            if (!Monetization.isDistanceTimePassed(AdType.APP_OPEN)) {
+                Log.d(TAG, "AppOpenResume skip because distance time has not passed")
+                return
+            }
+
             if (!disableAppOpenResumeOnce) {
                 Log.d(TAG, "AppOpenResume prepare load and show")
                 isAppOpenAdShowing = true
                 loadAdJob?.cancel()
                 loadAdJob = CoroutineScope(SupervisorJob() + Dispatchers.Main).launch {
                     loadAds(activity)
-                    adGroup?.statusFlow?.first { it == com.tomo.monetization.ads.base.AdStatus.Ready || it == com.tomo.monetization.ads.base.AdStatus.Failure }?.let { status ->
-                        if (status == com.tomo.monetization.ads.base.AdStatus.Ready) {
-                            showAds(activity)
-                        } else {
-                            isAppOpenAdShowing = false
-                        }
-                    } ?: run {
+                    val status = kotlinx.coroutines.withTimeoutOrNull(30_000L) {
+                        adGroup?.statusFlow?.first { it == com.tomo.monetization.ads.base.AdStatus.Ready || it == com.tomo.monetization.ads.base.AdStatus.Failure }
+                    }
+                    if (status == com.tomo.monetization.ads.base.AdStatus.Ready) {
+                        showAds(activity)
+                    } else {
                         isAppOpenAdShowing = false
                     }
                 }

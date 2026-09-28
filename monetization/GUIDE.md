@@ -273,6 +273,12 @@ object AdsProvider {
         name = "native_onboard",
         isFullScreen = false
     )
+
+    val appOpenResumeAd = AppOpenAdGroup(
+        BuildConfig.app_open_high_id to "app_open_high",
+        BuildConfig.app_open_floor_id to "app_open_floor",
+        name = "app_open_resume"
+    )
 }
 ```
 
@@ -338,8 +344,15 @@ NativeAdContent(
 )
 ```
 
-#### App Open Ad
+#### App Open Ad (Supports Normal, 2F, MF)
 ```kotlin
+// Method 1: Using AdGroup (Supports 2F / MF Waterfall)
+AppOpenResumeManager.setUpAppOpenResume(
+    adGroup = AdsProvider.appOpenResumeAd,
+    activities = arrayOf(MainActivity::class)
+)
+
+// Method 2: Single Ad Unit ID (Normal)
 AppOpenResumeManager.setUpAppOpenResume(
     adId = BuildConfig.app_open_id,
     name = "app_open_ad",

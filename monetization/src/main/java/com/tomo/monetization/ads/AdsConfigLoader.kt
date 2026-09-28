@@ -176,12 +176,10 @@ object AdsConfigLoader {
                             AdsProvider.appOpens[key] = group
                             Log.d(TAG, "Configured APP_OPEN group: $key with ${adUnitsList.size} units")
 
-                            // Automatically setup App Open Resume Manager with the parsed ID
+                            // Automatically setup App Open Resume Manager with the parsed adGroup (supporting Normal, 2F, and MF)
                             AppOpenResumeManager.setUpAppOpenResume(
-                                adId = firstAdId,
-                                name = "app_open_resume",
-                                enabled = groupEnabled,
-                                activities = resumeActivities.toTypedArray()
+                                adGroup = group,
+                                activities = resumeActivities
                             )
                         }
                     }

@@ -25,6 +25,16 @@ class AppOpenAdGroup(
         private const val TAG = "AppOpenAdGroup"
     }
 
+    constructor(
+        vararg ids: Pair<String, String>,
+        name: String,
+        coroutineScope: CoroutineScope = CoroutineScope(Dispatchers.IO),
+    ) : this(
+        adUnits = ids.map { AppOpenAdUnit(it.first, it.second) },
+        name,
+        coroutineScope,
+    )
+
     fun loadAds(context: Context, timeout: Long = 30_000L) {
         if (!enabled) {
             AdLogger.logLoadFailed("APP_OPEN", name, "", "Group is disabled")
