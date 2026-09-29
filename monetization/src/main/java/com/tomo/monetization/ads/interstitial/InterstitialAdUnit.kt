@@ -87,6 +87,7 @@ class InterstitialAdUnit(id: String, name: String) : AdUnit<InterstitialAd>(id, 
 
     fun showAd(
         activity: Activity,
+        showLoadingDialog: Boolean = true,
         onNextAction: (Boolean) -> Unit,
         onAdShowed: () -> Unit,
         onAdClicked: () -> Unit,
@@ -113,7 +114,13 @@ class InterstitialAdUnit(id: String, name: String) : AdUnit<InterstitialAd>(id, 
                     return
                 }
 
-                val loadingDialog = PrepareLoadingAdsDialog(activity).apply { show() }
+                val loadingDialog = if (showLoadingDialog) {
+                    try {
+                        PrepareLoadingAdsDialog(activity).apply { show() }
+                    } catch (_: Exception) {
+                        null
+                    }
+                } else null
 
                 ad.fullScreenContentCallback = object : FullScreenContentCallback() {
                     override fun onAdClicked() {
@@ -151,7 +158,7 @@ class InterstitialAdUnit(id: String, name: String) : AdUnit<InterstitialAd>(id, 
                         Log.d(TAG, "onAdShowed: $name $id")
                         activity.launchWhenResumed {
                             delay(3000)
-                            loadingDialog.hideLoadingAdsText()
+                            loadingDialog?.hideLoadingAdsText()
                         }
                         onAdShowed()
                     }
@@ -208,9 +215,9 @@ class InterstitialAdUnit(id: String, name: String) : AdUnit<InterstitialAd>(id, 
         }
     }
 
-    private fun dismissLoadAdsDialog(activity: Activity, dialog: PrepareLoadingAdsDialog) {
+    private fun dismissLoadAdsDialog(activity: Activity, dialog: PrepareLoadingAdsDialog?) {
         try {
-            if (!activity.isFinishing && !activity.isDestroyed && dialog.isShowing) {
+            if (!activity.isFinishing && !activity.isDestroyed && dialog?.isShowing == true) {
                 dialog.dismiss()
             }
         } catch (_: Exception) {

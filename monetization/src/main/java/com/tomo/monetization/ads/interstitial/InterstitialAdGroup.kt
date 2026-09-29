@@ -3,6 +3,7 @@ package com.tomo.monetization.ads.interstitial
 import android.app.Activity
 import android.content.Context
 import android.util.Log
+import com.google.android.gms.ads.AdError
 import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.tomo.monetization.AdType
 import com.tomo.monetization.Monetization
@@ -101,6 +102,7 @@ class InterstitialAdGroup(
     fun showAds(
         activity: Activity,
         callback: InterstitialAdCallback,
+        showLoadingDialog: Boolean = true,
     ) {
         Log.d(TAG, "showAds: group $name")
 
@@ -125,6 +127,7 @@ class InterstitialAdGroup(
             }, showAds = {
                 adToShow.showAd(
                     activity,
+                    showLoadingDialog = showLoadingDialog,
                     onNextAction = {
                         callback.onNextAction(it)
                         if (it) Monetization.updateRecentlyTimeShowAds(AdType.INTERSTITIAL)
@@ -156,6 +159,7 @@ class InterstitialAdGroup(
     fun showSplashAds(
         activity: Activity,
         callback: InterstitialAdCallback,
+        showLoadingDialog: Boolean = false,
     ) {
         Log.d(TAG, "showAds: group $name")
 
@@ -174,6 +178,7 @@ class InterstitialAdGroup(
         adUnits.firstOrNull { it.status == AdStatus.Ready }?.let { adToShow ->
             adToShow.showAd(
                 activity,
+                showLoadingDialog = showLoadingDialog,
                 onNextAction = {
                     callback.onNextAction(it)
                     if (it) Monetization.updateRecentlyTimeShowAds(AdType.INTERSTITIAL)
@@ -219,7 +224,7 @@ class InterstitialAdGroup(
         }
 
         if (status == AdStatus.Ready) {
-            showAds(activity, callback)
+            showAds(activity, callback, showLoadingDialog = showLoading)
             return
         }
 
@@ -239,34 +244,62 @@ class InterstitialAdGroup(
         }
 
         activity.getLifecycleScope().launch(Dispatchers.Main) {
-            try {
-                loadAds(activity, timeout = timeout, retryFail = false)
+            loadAds(activity, timeout = timeout, retryFail = false)
 
-                val startTime = System.currentTimeMillis()
-                var isAdLoaded = false
+            val startTime = System.currentTimeMillis()
+            var isAdLoaded = false
 
-                while (System.currentTimeMillis() - startTime < timeout) {
-                    if (status == AdStatus.Ready) {
-                        isAdLoaded = true
-                        break
-                    }
-                    if (status == AdStatus.Failure) {
-                        break
-                    }
-                    delay(100)
+            while (System.currentTimeMillis() - startTime < timeout) {
+                if (status == AdStatus.Ready) {
+                    isAdLoaded = true
+                    break
                 }
-
-                if (isAdLoaded) {
-                    showAds(activity, callback)
-                } else {
-                    callback.onNextAction(false)
+                if (status == AdStatus.Failure) {
+                    break
                 }
-            } finally {
+                delay(100)
+            }
+
+            if (isAdLoaded) {
+                val wrappedCallback = object : InterstitialAdCallback {
+                    override fun onNextAction(show: Boolean) {
+                        try {
+                            if (loadingDialog?.isShowing == true) {
+                                loadingDialog.dismiss()
+                            }
+                        } catch (_: Exception) {}
+                        callback.onNextAction(show)
+                    }
+
+                    override fun onAdClicked(adId: String, adName: String) {
+                        callback.onAdClicked(adId, adName)
+                    }
+
+                    override fun onAdImpression(adId: String, adName: String) {
+                        callback.onAdImpression(adId, adName)
+                    }
+
+                    override fun onAdShowed(adId: String, adName: String) {
+                        callback.onAdShowed(adId, adName)
+                    }
+
+                    override fun onAdFailedToShow(error: AdError?) {
+                        try {
+                            if (loadingDialog?.isShowing == true) {
+                                loadingDialog.dismiss()
+                            }
+                        } catch (_: Exception) {}
+                        callback.onAdFailedToShow(error)
+                    }
+                }
+                showAds(activity, wrappedCallback, showLoadingDialog = false)
+            } else {
                 try {
                     if (loadingDialog?.isShowing == true) {
                         loadingDialog.dismiss()
                     }
                 } catch (_: Exception) {}
+                callback.onNextAction(false)
             }
         }
     }
